@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رامک</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <link rel="shortcut icon" href="./assets/images/logo.png" type="image/x-icon">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Tahoma, sans-serif;
+            background-color: #000;
+            color: white;
+            direction: rtl;
+        }
+        
+        #startButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 40px;
+            font-size: 20px;
+            background: linear-gradient(135deg, #9a8161 0%, #a0522d 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+            transition: all 0.3s ease;
+        }
+        
+        #startButton:hover {
+            color: white;
+            color: white;
+            background: linear-gradient(135deg, #a0522d 0%, #9a8161 100%);
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+        
+        #startButton:active {
+            transform: translate(-50%, -50%) scale(0.95);
+        }
+        
+        #timer {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 30px;
+            z-index: 1000;
+            display: none;
+        }
+           
+        
+        @keyframes scan {
+            0% { transform: translateY(-100px); }
+            100% { transform: translateY(100px); }
+        }
+        
+        .instructions {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 10px;
+            max-width: 90%;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <a-scene
+        mindar-image="imageTargetSrc: ./cow13.mind;"
+        maxTrack: 0.5;
+        minDetectionRating: 0.2;
+        missTolerance: 0;
+        warmupTolerance: 0;
+        filterMinCF: 0.01;
+        filterBeta: 1000;
+    >
+        <a-assets>
+            <video id="myvideo" autoplay loop muted playsinline
+                src="./output.webm"
+                preload="auto"
+                crossorigin="anonymous"
+                playsinline
+                webkit-playsinline
+            ></video>
+        </a-assets>
+
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <a-entity 
+            light="type: ambient; intensity: 0.5" 
+            mindar-image-target="targetindex: 0" 
+            id="video-target"
+            scale="0.5 0.5 0.5"
+        >
+            <a-video
+                src="#myvideo"
+                width="3"
+                height="1.5"
+                position="0 0 0"
+                rotation="0 0 0"
+            ></a-video>
+        </a-entity>
+    </a-scene>
+    
+    <!-- ناحیه اسکن سفارشی -->
+    <div class="scanning-overlay">
+        <div class="scanning-line"></div>
+    </div>
+    
+    <!-- تایمر شمارش معکوس -->
+    <div id="timer">4</div>
+    
+    <!-- دکمه شروع بازی -->
+    <button id="startButton">شروع نینجا</button>
+    
+    <!-- راهنمای استفاده -->
+    <div class="instructions">
+        گاو رو روبروی دوربین قرار بده تا نینجا شی
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const video = document.querySelector("#myvideo");
+            const target = document.querySelector("#video-target");
+            const startButton = document.getElementById("startButton");
+            const timer = document.getElementById("timer");
+            
+            let timerInterval;
+            let secondsLeft = 5;
+            
+            // رویداد پیدا شدن هدف
+            target.addEventListener("targetFound", () => {
+                video.play();
+                
+                // نمایش تایمر
+                timer.style.display = "block";
+                secondsLeft = 4;
+                timer.textContent = secondsLeft;
+                
+                // شروع تایمر
+                clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    secondsLeft--;
+                    timer.textContent = secondsLeft;
+                    
+                    // پس از 4 ثانیه نمایش دکمه
+                    if(secondsLeft <= 0) {
+                        clearInterval(timerInterval);
+                        timer.style.display = "none";
+                        startButton.style.display = "block";
+                    }
+                }, 1000);
+            });
+            
+            // رویداد گم شدن هدف
+            target.addEventListener("targetLost", () => {
+                video.pause();
+                clearInterval(timerInterval);
+                timer.style.display = "none";
+                startButton.style.display = "none";
+            });
+            
+            // کلیک روی دکمه شروع بازی
+            startButton.addEventListener("click", () => {
+                // انتقال به صفحه بعدی
+                window.location.href = "index.html";
+            });
+            
+            // برای گرفتن اجازه استفاده از دوربین در iOS و Android
+            if (
+                typeof DeviceOrientationEvent !== "undefined" &&
+                typeof DeviceOrientationEvent.requestPermission === "function"
+            ) {
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            console.log("دسترسی به سنسور داده شد");
+                        }
+                    })
+                    .catch(() => {
+                        alert("لطفاً دسترسی به سنسور دستگاه را در مرورگر فعال کنید.");
+                    });
+            }
+            
+            // اطمینان از گرفتن اجازه دوربین
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices
+                    .getUserMedia({ video: true })
+                    .catch((err) => {
+                        alert("اجازه دسترسی به دوربین داده نشد. لطفاً اجازه بدهید.");
+                        console.error(err);
+                    });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <link rel="shortcut icon" href="./assets/images/logo.png" type="image/x-icon">
+    <link rel="stylesheet" href="scan2.css" type="image/x-icon">
+    
+  </head>
+  <body>
+    <a-scene
+    mindar-image="imageTargetSrc: ./cow13.mind;"
+    maxTrack: 0.5;
+    minDetectionRating: 0.2;
+    missTolerance: 0;
+    warmupTolerance: 0;
+    filterMinCF: 0.01;
+    filterBeta: 1000;
+  
+  >
+      <a-assets>
+        <video  autoplay loop muted playsinline controls
+          id="myvideo"
+          src="./output.webm"
+          preload="auto"
+          crossorigin="anonymous"
+          playsinline
+          webkit-playsinline
+          muted
+        ></video>
+      </a-assets>
+
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <a-entity light="type: ambient; intensity: 0.5" mindar-image-target="targetindex: 0" id="video-target"
+  scale="0.5 0.5 0.5" >
+        <a-video
+          src="#myvideo"
+          width="3"
+          height="1.5"
+          position="0 0 0"
+          rotation="0 0 0"
+        ></a-video>
+     
+      
+      </a-entity>
+     
+    </a-scene>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const video = document.querySelector("#myvideo");
+        const target = document.querySelector("#video-target");
+
+
+
+        target.addEventListener("targetFound", () => {
+          video.play();
+        });
+
+        target.addEventListener("targetLost", () => {
+          video.pause();
+        });
+
+        // برای گرفتن اجازه استفاده از دوربین در iOS و Android
+        if (
+          typeof DeviceOrientationEvent !== "undefined" &&
+          typeof DeviceOrientationEvent.requestPermission === "function"
+        ) {
+          DeviceOrientationEvent.requestPermission().catch(() => {
+            alert("لطفاً دسترسی به سنسور دستگاه را در مرورگر فعال کنید.");
+          });
+        }
+
+        // اطمینان از گرفتن اجازه دوربین (فقط در صورت نیاز، مثلاً برای تست دستی)
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          navigator.mediaDevices
+            .getUserMedia({ video: true })
+            .catch((err) => {
+              alert("اجازه دسترسی به دوربین داده نشد. لطفاً اجازه بدهید.");
+              console.error(err);
+            });
+        }
+      });
+    </script>
+  </body>
+</html>
+
+
